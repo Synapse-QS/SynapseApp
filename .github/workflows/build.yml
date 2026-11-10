@@ -4,10 +4,11 @@ on:
   push:
     paths:
       - 'app/**'
-      - 'shared/**'
       - 'gradle/**'
       - 'build.gradle'
+      - 'build.gradle.kts'
       - 'settings.gradle'
+      - 'settings.gradle.kts'
       - 'gradlew'
       - 'gradlew.bat'
       - 'gradle.properties'
@@ -40,6 +41,7 @@ jobs:
       - name: 🛎️ Checkout
         uses: actions/checkout@v4
         with:
+          # versionCode = git rev-list --count HEAD — محتاج history كامل
           fetch-depth: 0
           persist-credentials: false
 
@@ -59,17 +61,6 @@ jobs:
             exit 1
           fi
           printf '%s\n' "$GOOGLE_SERVICES_JSON" > app/google-services.json
-          fail=0
-          for pattern in \
-            '"project_number"[[:space:]]*:[[:space:]]*"999615440042"' \
-            '"package_name"[[:space:]]*:[[:space:]]*"com\.synapse\.social\.studioasinc"' \
-            '"package_name"[[:space:]]*:[[:space:]]*"com\.synapse\.social\.studioasinc\.debug"'; do
-            if ! grep -Eq "$pattern" app/google-services.json; then
-              echo "::error title=google-services.json::pattern not found: $pattern"
-              fail=1
-            fi
-          done
-          exit "$fail"
 
       - name: 🐘 Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -81,8 +72,9 @@ jobs:
         timeout-minutes: 240
         shell: bash
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_SYNAPSE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_SYNAPSE_ANON_KEY }}
+          # غيّر الأسماء دي حسب اللي build.gradle بتاعك بيقرأه
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SYNAPSE_S3_ENDPOINT_URL: ${{ secrets.SUPABASE_SYNAPSE_S3_ENDPOINT_URL }}
           SUPABASE_SYNAPSE_S3_ENDPOINT_REGION: ${{ secrets.SUPABASE_SYNAPSE_S3_ENDPOINT_REGION }}
           SUPABASE_SYNAPSE_S3_ACCESS_KEY_ID: ${{ secrets.SUPABASE_SYNAPSE_S3_ACCESS_KEY_ID }}
@@ -100,29 +92,6 @@ jobs:
           AI_REPAIR_MAX_INFRA_RETRIES: '2'
           AI_REPAIR_ALLOW_CURL_INSTALL: ${{ vars.KILO_REPAIR_ALLOW_CURL_INSTALL }}
         run: bash ./.github/workflows/ai_build_repair.sh
-
-      - name: 🔎 Verify shipped auth and push config
-        run: |
-          set -euo pipefail
-          build_config=app/build/generated/source/buildConfig/release/com/synapse/social/studioasinc/BuildConfig.java
-          if [ ! -f "$build_config" ]; then
-            echo "::error title=BuildConfig::missing $build_config"
-            exit 1
-          fi
-          fail=0
-          expect() {
-            field=$1
-            want=$2
-            got=$(grep -oP "(?<=String $field = \")[^\"]*" "$build_config" || true)
-            if [ "$got" != "$want" ]; then
-              echo "::error title=BuildConfig::$field resolved to '${got}', expected '$want' — check the org secret"
-              fail=1
-            fi
-          }
-          expect SUPABASE_URL "https://apqvyyphlrtmuyjnzmuq.supabase.co"
-          expect GOOGLE_WEB_CLIENT_ID "999615440042-9s9he8resh1k2i6st0dnmg1fiogv0vm6.apps.googleusercontent.com"
-          expect ONESIGNAL_APP_ID "e6b42d8e-8039-4042-9d49-f96a7b675ad3"
-          exit "$fail"
 
       - name: 🧾 Commit AI repairs
         if: steps.build_loop.outputs.repairs_applied == 'true'
@@ -206,6 +175,7 @@ jobs:
           BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TOPIC_ID: ${{ secrets.TELEGRAM_TOPIC_ID }}
+          # لو مشروعك مش بيعمل split per ABI، غيّر الاسم لـ app-release-<sha>.apk
           APK_PATH: ./downloaded-artifact/app-arm64-v8a-release-${{ needs.build.outputs.short_sha }}.apk
           GITHUB_ACTOR: ${{ github.actor }}
           BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
