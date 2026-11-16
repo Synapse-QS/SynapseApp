@@ -49,7 +49,7 @@ permissions:
 jobs:
   build:
     name: 🔨 Build APKs
-    runs-on: ${{ vars.IS_USING_HOSTED_RUNNERS == 'true' && 'self-hosted' || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ubuntu-latest
     # contents:write is used at most once per run, by "Commit AI repairs", and only after the
     # release build and the release verification both passed. Nothing else needs write access,
     # and no other step receives a token that could use it.
@@ -86,12 +86,12 @@ jobs:
             exit 1
           fi
           printf '%s\n' "$GOOGLE_SERVICES_JSON" > app/google-services.json
-          # The Gradle google-services plugin rejects malformed JSON; what it cannot catch is a
-          # valid file for the wrong project, which is how a deleted Firebase project shipped
-          # unnoticed. Pin the project number and both package clients here.
+          # The Gradle google-services plugin rejects malformed JSON. Here we only check that the
+          # file has a project number and the package clients this app uses. The project number
+          # is not hardcoded, so each fork can use its own Firebase project.
           fail=0
           for pattern in \
-            '"project_number"[[:space:]]*:[[:space:]]*"999615440042"' \
+            '"project_number"[[:space:]]*:[[:space:]]*"[0-9]+"' \
             '"package_name"[[:space:]]*:[[:space:]]*"com\.synapse\.social\.studioasinc"' \
             '"package_name"[[:space:]]*:[[:space:]]*"com\.synapse\.social\.studioasinc\.debug"'; do
             if ! grep -Eq "$pattern" app/google-services.json; then
@@ -151,18 +151,20 @@ jobs:
             exit 1
           fi
           fail=0
+          # Fails the build when a required value is empty or still a placeholder.
+          # Values come from this fork's own GitHub Secrets, not hardcoded here.
           expect() {
             field=$1
-            want=$2
             got=$(grep -oP "(?<=String $field = \")[^\"]*" "$build_config" || true)
-            if [ "$got" != "$want" ]; then
-              echo "::error title=BuildConfig::$field resolved to '${got}', expected '$want' — check the org secret"
+            if [ -z "$got" ] || [[ "$got" == *placeholder* ]] || [[ "$got" == *your-project* ]]; then
+              echo "::error title=BuildConfig::$field is empty or a placeholder ('${got}') — set the matching GitHub secret"
               fail=1
             fi
           }
-          expect SUPABASE_URL "https://apqvyyphlrtmuyjnzmuq.supabase.co"
-          expect GOOGLE_WEB_CLIENT_ID "999615440042-9s9he8resh1k2i6st0dnmg1fiogv0vm6.apps.googleusercontent.com"
-          expect ONESIGNAL_APP_ID "e6b42d8e-8039-4042-9d49-f96a7b675ad3"
+          expect SUPABASE_URL
+          expect SUPABASE_ANON_KEY
+          expect GOOGLE_WEB_CLIENT_ID
+          expect ONESIGNAL_APP_ID
           exit "$fail"
 
       # One commit for every successful repair, and only ever after the build and the
