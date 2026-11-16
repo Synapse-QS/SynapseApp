@@ -41,14 +41,9 @@ private fun String?.isNullAsStringBlank(): Boolean {
 }
 
 actual object SynapseConfig {
-    actual val SUPABASE_URL: String = getVal(
-        "SUPABASE_URL",
-        "https://apqvyyphlrtmuyjnzmuq.supabase.co"
-    )
-    actual val SUPABASE_ANON_KEY: String = getVal(
-        "SUPABASE_ANON_KEY",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwcXZ5eXBobHJ0bXV5am56bXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MDUwODcsImV4cCI6MjA3NDI4MTA4N30.On7kjijj7bUg_xzr2HwCTYvLaV-f_1aDYqVTfKai7gc"
-    )
+    // Supabase project of this fork (publishable key only; never put the secret key here).
+    actual val SUPABASE_URL: String = getVal("SUPABASE_URL", "https://vjohcdcoeuxjderhjarz.supabase.co")
+    actual val SUPABASE_ANON_KEY: String = getVal("SUPABASE_ANON_KEY", "sb_publishable_RYH9oFh93nv7LZ65PZ7y0g_LFR6xM71")
     actual val SUPABASE_SYNAPSE_S3_ENDPOINT_URL: String = getVal("SUPABASE_SYNAPSE_S3_ENDPOINT_URL")
     actual val SUPABASE_SYNAPSE_S3_ENDPOINT_REGION: String = getVal("SUPABASE_SYNAPSE_S3_ENDPOINT_REGION")
     actual val SUPABASE_SYNAPSE_S3_ACCESS_KEY_ID: String = getVal("SUPABASE_SYNAPSE_S3_ACCESS_KEY_ID")
