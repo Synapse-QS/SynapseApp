@@ -225,8 +225,8 @@ data class ChatInboxSummaryDto(
     @SerialName("is_muted") val isMuted: Boolean = false,
     @SerialName("last_message") val lastMessage: MessageDto? = null,
     @SerialName("unread_count") val unreadCount: Long = 0,
-    @SerialName("enc_name") val encName: String? = null,
-    @SerialName("enc_avatar_url") val encAvatarUrl: String? = null,
+    @SerialName("enc_name") val encName: kotlinx.serialization.json.JsonElement? = null,
+    @SerialName("enc_avatar_url") val encAvatarUrl: kotlinx.serialization.json.JsonElement? = null,
     /** Chat-level timestamp so message-less conversations (new groups) still date correctly. */
     @SerialName("chat_created_at") val chatCreatedAt: String? = null
 )
